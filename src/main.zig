@@ -18,6 +18,12 @@ pub fn main() !void {
     const row = p.get_row(3);
     p.print_row(row);
 
+    const col = p.get_col(3);
+    p.print_col(col);
+
+    const sub = p.get_sub(4,4);
+    p.print_sub(sub);
+    
     //try p.fill_scratch(1, 2);
     //p.print_scratch();
 

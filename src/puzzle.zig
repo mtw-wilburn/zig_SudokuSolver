@@ -53,9 +53,28 @@ pub fn Engine() type {
         }
 
         pub fn get_sub(self: *Self, x: u4, y: u4) [9]*?TaggedVal {
+            var _x: [3]u4 = undefined;
+            var _y: [3]u4 = undefined;
+
+            switch (x) {
+                6...9 => _x = .{ 6, 7, 8 },
+                3...5 => _x = .{ 3, 5, 4 },
+                else => _x = .{ 0, 1, 2 },
+            }
+
+            switch (y) {
+                6...9 => _y = .{ 6, 7, 8 },
+                3...5 => _y = .{ 3, 5, 4 },
+                else => _y = .{ 0, 1, 2 },
+            }
+
             var sub: [9]*?TaggedVal = undefined;
-            for (0..9) |i| {
-                sub[i] = &self.board[x][i];
+            var counter: u4 = 0;
+            for (_y) |j| {
+                for (_x) |i| {
+                    sub[counter] = &self.board[i][j];
+                    counter += 1;
+                }
             }
             return sub;
         }
@@ -123,6 +142,48 @@ pub fn Engine() type {
 
             std.debug.print("-------------------------------------\n", .{});
             for (row) |x| {
+                if (x.*) |val| {
+                    switch (val) {
+                        .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),
+                        .solved => |n| std.debug.print("| {d} ", .{n}),
+                        else => {},
+                    }
+                } else {
+                    std.debug.print("| {s} ", .{" "});
+                }
+            }
+            std.debug.print("|\n", .{});
+            std.debug.print("-------------------------------------\n", .{});
+        }
+
+        pub fn print_col(self: Self, col: [9]*?TaggedVal) void {
+            _ = self;
+            const blue = "\x1b[34m";
+            const reset = "\x1b[0m";
+
+            std.debug.print("-------------------------------------\n", .{});
+            for (col) |x| {
+                if (x.*) |val| {
+                    switch (val) {
+                        .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),
+                        .solved => |n| std.debug.print("| {d} ", .{n}),
+                        else => {},
+                    }
+                } else {
+                    std.debug.print("| {s} ", .{" "});
+                }
+            }
+            std.debug.print("|\n", .{});
+            std.debug.print("-------------------------------------\n", .{});
+        }
+
+        pub fn print_sub(self: Self, sub: [9]*?TaggedVal) void {
+            _ = self;
+            const blue = "\x1b[34m";
+            const reset = "\x1b[0m";
+
+            std.debug.print("-------------------------------------\n", .{});
+            for (sub) |x| {
                 if (x.*) |val| {
                     switch (val) {
                         .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),
