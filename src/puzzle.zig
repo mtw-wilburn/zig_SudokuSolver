@@ -79,13 +79,13 @@ pub fn Engine() type {
             return sub;
         }
 
-        fn fill_scratch(self: *Self) !void {
+        pub fn fill_scratch(self: *Self) !void {
             for (0..9) |y| {
                 for (0..9) |x| {
                     var val = std.AutoHashMap(u4, void).init(self.allocator);
                     for (1..10) |v| {
                         const i_u4: u4 = @intCast(v);
-                        try val.put(i_u4, void);
+                        try val.put(i_u4, {});
                     }
                     self.board[x][y] = .{ .scratch = val };
                 }
@@ -111,11 +111,11 @@ pub fn Engine() type {
             for (0..9) |y| {
                 for (0..9) |x| {
                     if (self.board[x][y]) |val| {
-                        switch (val) {
-                            .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),
-                            .solved => |n| std.debug.print("| {d} ", .{n}),
-                            else => {},
-                        }
+                        try switch (val) {
+                            .key => |n| writer.print("| {s}{d}{s} ", .{ blue, n, reset }),
+                            .solved => |n| writer.print("| {d} ", .{n}),
+                            else => writer.print("| {s} ", .{" "}),
+                        };
                     } else {
                         try writer.print("| {s} ", .{" "});
                     }
@@ -140,7 +140,7 @@ pub fn Engine() type {
                     switch (val) {
                         .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),
                         .solved => |n| std.debug.print("| {d} ", .{n}),
-                        else => {},
+                        else => std.debug.print("| {s} ", .{" "}),
                     }
                 } else {
                     std.debug.print("| {s} ", .{" "});

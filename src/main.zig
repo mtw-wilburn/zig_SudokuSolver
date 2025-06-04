@@ -12,6 +12,8 @@ pub fn main() !void {
     var p = puzzle.Engine().init(allocator);
     try p.print();
 
+    try p.fill_scratch();
+
     p.set_key(3, 3, 3);
     try p.print();
 
@@ -25,7 +27,7 @@ pub fn main() !void {
     p.print_rcs(sub);
 
     //try p.fill_scratch(1, 2);
-    //p.print_scratch();
+    p.print_scratch();
 }
 
 test "simple test" {
