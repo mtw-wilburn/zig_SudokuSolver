@@ -100,16 +100,10 @@ pub fn Engine() type {
             self.boar[x][y] = .{ .solved = val };
         }
 
-        // pub fn fill_scratch(self: *Self, x: u4, y: u4) !void {
-        //     var val = std.AutoHashMap(u4, void).init(self.allocator);
-        //     for (1..10) |i| {
-        //         const i_u4: u4 = @intCast(i);
-        //         try val.put(i_u4, {});
-        //     }
-        //     self.board[x][y] = .{ .scratch = val };
-        // }
+        pub fn print(self: Self) !void {
+            const out = std.io.getStdOut();
+            const writer = out.writer();
 
-        pub fn print(self: Self) void {
             const blue = "\x1b[34m";
             const reset = "\x1b[0m";
 
@@ -123,67 +117,25 @@ pub fn Engine() type {
                             else => {},
                         }
                     } else {
-                        std.debug.print("| {s} ", .{" "});
+                        try writer.print("| {s} ", .{" "});
                     }
                     if (x == 8) {
-                        std.debug.print("|\n", .{});
+                        try writer.print("|\n", .{});
                     }
                 }
                 if (y == 8) {
-                    std.debug.print("-------------------------------------\n", .{});
+                    try writer.print("-------------------------------------\n", .{});
                 }
             }
         }
 
-        pub fn print_row(self: Self, row: [9]*?TaggedVal) void {
+        pub fn print_rcs(self: Self, row: [9]*?TaggedVal) void {
             _ = self;
             const blue = "\x1b[34m";
             const reset = "\x1b[0m";
 
             std.debug.print("-------------------------------------\n", .{});
             for (row) |x| {
-                if (x.*) |val| {
-                    switch (val) {
-                        .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),
-                        .solved => |n| std.debug.print("| {d} ", .{n}),
-                        else => {},
-                    }
-                } else {
-                    std.debug.print("| {s} ", .{" "});
-                }
-            }
-            std.debug.print("|\n", .{});
-            std.debug.print("-------------------------------------\n", .{});
-        }
-
-        pub fn print_col(self: Self, col: [9]*?TaggedVal) void {
-            _ = self;
-            const blue = "\x1b[34m";
-            const reset = "\x1b[0m";
-
-            std.debug.print("-------------------------------------\n", .{});
-            for (col) |x| {
-                if (x.*) |val| {
-                    switch (val) {
-                        .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),
-                        .solved => |n| std.debug.print("| {d} ", .{n}),
-                        else => {},
-                    }
-                } else {
-                    std.debug.print("| {s} ", .{" "});
-                }
-            }
-            std.debug.print("|\n", .{});
-            std.debug.print("-------------------------------------\n", .{});
-        }
-
-        pub fn print_sub(self: Self, sub: [9]*?TaggedVal) void {
-            _ = self;
-            const blue = "\x1b[34m";
-            const reset = "\x1b[0m";
-
-            std.debug.print("-------------------------------------\n", .{});
-            for (sub) |x| {
                 if (x.*) |val| {
                     switch (val) {
                         .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),

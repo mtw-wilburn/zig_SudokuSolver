@@ -10,39 +10,22 @@ pub fn main() !void {
     defer _ = gpa.deinit();
 
     var p = puzzle.Engine().init(allocator);
-    p.print();
+    try p.print();
 
     p.set_key(3, 3, 3);
-    p.print();
+    try p.print();
 
     const row = p.get_row(3);
-    p.print_row(row);
+    p.print_rcs(row);
 
     const col = p.get_col(3);
-    p.print_col(col);
+    p.print_rcs(col);
 
     const sub = p.get_sub(4,4);
-    p.print_sub(sub);
-    
+    p.print_rcs(sub);
+
     //try p.fill_scratch(1, 2);
     //p.print_scratch();
-
-    // const row = [_]?u4{5} ** 9;
-    // const arr = [_][9]?u4{row} ** 9;
-    //
-    // //std.debug.print("arr -> {any}\n", .{arr}out);
-    // std.debug.print("-------------------------------------\n", .{});
-    // for (0..9) |y| {
-    //     for (0..9) |x| {
-    //         std.debug.print("| {d} ", .{arr[x][y].?});
-    //         if (x == 8) {
-    //             std.debug.print("|\n", .{});
-    //         }
-    //     }
-    //     if (y == 8) {
-    //         std.debug.print("-------------------------------------\n", .{});
-    //     }
-    // }
 }
 
 test "simple test" {
