@@ -1,14 +1,20 @@
 const std = @import("std");
 
+pub const Tag = enum {
+    key,
+    solved,
+    scratch,
+};
+
 pub fn Engine() type {
     return struct {
         const Self = @This();
 
-        const Tag = enum {
-            key,
-            solved,
-            scratch,
-        };
+        // const Tag = enum {
+        //     key,
+        //     solved,
+        //     scratch,
+        // };
 
         const TaggedVal = union(Tag) {
             key: u4,
@@ -87,18 +93,80 @@ pub fn Engine() type {
                         const i_u4: u4 = @intCast(v);
                         try val.put(i_u4, {});
                     }
-                    self.board[x][y] = .{ .scratch = val };
+                    self.board[x][y] = .{ .scratch = val.move() };
                 }
             }
         }
 
-        pub fn set_key(self: *Self, x: u4, y: u4, val: u4) void {
-            self.board[x][y] = .{ .key = val };
+        // pub fn set_key(self: *Self, x: u4, y: u4, val: u4) void {
+        //     if (self.board[x][y]) |v| {
+        //         switch (v) {
+        //             .scratch => |*e| {
+        //                 var entry = e.*;
+        //                 entry.deinit();
+        //             },
+        //             else => {},
+        //         }
+        //     }
+        //     self.board[x][y] = .{ .key = val };
+        //     self.scratch_remove_key(self.get_row(y), val);
+        //     self.scratch_remove_key(self.get_col(x), val);
+        //     self.scratch_remove_key(self.get_sub(x, y), val);
+        // }
+
+        fn scratch_remove_key(self: *Self, arr: [9]*?TaggedVal, val: u4) void {
+            _ = self;
+            for (arr) |i| {
+                if (i.*) |v| {
+                    switch (v) {
+                        .scratch => |*e| {
+                            var entry = e.*;
+                            if (entry.contains(val) == true) {
+                                _ = entry.remove(val);
+                            }
+                        },
+                        else => {},
+                    }
+                }
+            }
         }
 
-        pub fn set_solved(self: *Self, x: u4, y: u4, val: u4) void {
-            self.boar[x][y] = .{ .solved = val };
+        pub fn set(self: *Self, x: u4, y: u4, val: u4, tag: Tag) void {
+            if (self.board[x][y]) |v| {
+                switch (v) {
+                    .scratch => |*e| {
+                        var entry = e.*;
+                        entry.deinit();
+                    },
+                    else => {},
+                }
+            }
+            switch (tag) {
+                .key => self.board[x][y] = .{ .key = val },
+                .solved => self.board[x][y] = .{ .solved = val },
+                else => {},
+            }
+            // self.board[x][y] = .{ .key = val };
+            self.scratch_remove_key(self.get_row(y), val);
+            self.scratch_remove_key(self.get_col(x), val);
+            self.scratch_remove_key(self.get_sub(x, y), val);
         }
+
+        // pub fn set_solved(self: *Self, x: u4, y: u4, val: u4) void {
+        //     if (self.board[x][y]) |v| {
+        //         switch (v) {
+        //             .scratch => |*e| {
+        //                 var entry = e.*;
+        //                 entry.deinit();
+        //             },
+        //             else => {},
+        //         }
+        //     }
+        //     self.board[x][y] = .{ .solved = val };
+        //     self.scratch_remove_key(self.get_row(y), val);
+        //     self.scratch_remove_key(self.get_col(x), val);
+        //     self.scratch_remove_key(self.get_sub(x, y), val);
+        // }
 
         pub fn print(self: Self) !void {
             const out = std.io.getStdOut();
@@ -111,11 +179,11 @@ pub fn Engine() type {
             for (0..9) |y| {
                 for (0..9) |x| {
                     if (self.board[x][y]) |val| {
-                        try switch (val) {
-                            .key => |n| writer.print("| {s}{d}{s} ", .{ blue, n, reset }),
-                            .solved => |n| writer.print("| {d} ", .{n}),
-                            else => writer.print("| {s} ", .{" "}),
-                        };
+                        switch (val) {
+                            .key => |n| try writer.print("| {s}{d}{s} ", .{ blue, n, reset }),
+                            .solved => |n| try writer.print("| {d} ", .{n}),
+                            else => try writer.print("| {s} ", .{" "}),
+                        }
                     } else {
                         try writer.print("| {s} ", .{" "});
                     }
@@ -129,13 +197,13 @@ pub fn Engine() type {
             }
         }
 
-        pub fn print_rcs(self: Self, row: [9]*?TaggedVal) void {
+        pub fn print_rcs(self: Self, arr: [9]*?TaggedVal) void {
             _ = self;
             const blue = "\x1b[34m";
             const reset = "\x1b[0m";
 
             std.debug.print("-------------------------------------\n", .{});
-            for (row) |x| {
+            for (arr) |x| {
                 if (x.*) |val| {
                     switch (val) {
                         .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),

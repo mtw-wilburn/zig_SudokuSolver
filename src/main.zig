@@ -14,7 +14,10 @@ pub fn main() !void {
 
     try p.fill_scratch();
 
-    p.set_key(3, 3, 3);
+    // p.set_solved(2, 2, 2);
+    // p.set_key(3, 3, 3);
+    p.set(2, 2, 2, puzzle.Tag.solved);
+    p.set(3, 3, 3, puzzle.Tag.key);
     try p.print();
 
     const row = p.get_row(3);
@@ -26,7 +29,6 @@ pub fn main() !void {
     const sub = p.get_sub(4,4);
     p.print_rcs(sub);
 
-    //try p.fill_scratch(1, 2);
     p.print_scratch();
 }
 
