@@ -10,12 +10,6 @@ pub fn Engine() type {
     return struct {
         const Self = @This();
 
-        // const Tag = enum {
-        //     key,
-        //     solved,
-        //     scratch,
-        // };
-
         const TaggedVal = union(Tag) {
             key: u4,
             solved: u4,
@@ -90,39 +84,22 @@ pub fn Engine() type {
                 for (0..9) |x| {
                     var val = std.AutoHashMap(u4, void).init(self.allocator);
                     for (1..10) |v| {
-                        const i_u4: u4 = @intCast(v);
-                        try val.put(i_u4, {});
+                        // const i_u4: u4 = @intCast(v);
+                        try val.put(@as(u4, @intCast(v)), {});
                     }
-                    self.board[x][y] = .{ .scratch = val.move() };
+                    self.board[x][y] = .{ .scratch = val };
                 }
             }
         }
 
-        // pub fn set_key(self: *Self, x: u4, y: u4, val: u4) void {
-        //     if (self.board[x][y]) |v| {
-        //         switch (v) {
-        //             .scratch => |*e| {
-        //                 var entry = e.*;
-        //                 entry.deinit();
-        //             },
-        //             else => {},
-        //         }
-        //     }
-        //     self.board[x][y] = .{ .key = val };
-        //     self.scratch_remove_key(self.get_row(y), val);
-        //     self.scratch_remove_key(self.get_col(x), val);
-        //     self.scratch_remove_key(self.get_sub(x, y), val);
-        // }
-
         fn scratch_remove_key(self: *Self, arr: [9]*?TaggedVal, val: u4) void {
             _ = self;
-            for (arr) |i| {
-                if (i.*) |v| {
-                    switch (v) {
-                        .scratch => |*e| {
-                            var entry = e.*;
-                            if (entry.contains(val) == true) {
-                                _ = entry.remove(val);
+            for (arr) |idx| {
+                if (idx.*) |*elm| {
+                    switch (elm.*) {
+                        .scratch => |*tag| {
+                            if (tag.contains(val) == true) {
+                                _ = tag.remove(val);
                             }
                         },
                         else => {},
@@ -131,12 +108,28 @@ pub fn Engine() type {
             }
         }
 
+        pub fn load(self: *Self, data: []const u4) !void {
+            try self.fill_scratch();
+            var x: u4 = 0;
+            var y: u4 = 0;
+            for (data, 0..) |d, idx| {
+                switch (d) {
+                    0 => {},
+                    else => {
+                        const i: u8 = @intCast(idx);
+                        x = @intCast(i % 9);
+                        y = @intCast(i / 9);
+                        self.set(x, y, d, Tag.key);
+                    },
+                }
+            }
+        }
+
         pub fn set(self: *Self, x: u4, y: u4, val: u4, tag: Tag) void {
-            if (self.board[x][y]) |v| {
-                switch (v) {
-                    .scratch => |*e| {
-                        var entry = e.*;
-                        entry.deinit();
+            if (self.board[x][y]) |*cell| {
+                switch (cell.*) {
+                    .scratch => |*t| {
+                        t.*.deinit();
                     },
                     else => {},
                 }
@@ -152,21 +145,33 @@ pub fn Engine() type {
             self.scratch_remove_key(self.get_sub(x, y), val);
         }
 
-        // pub fn set_solved(self: *Self, x: u4, y: u4, val: u4) void {
-        //     if (self.board[x][y]) |v| {
-        //         switch (v) {
-        //             .scratch => |*e| {
-        //                 var entry = e.*;
-        //                 entry.deinit();
-        //             },
-        //             else => {},
-        //         }
-        //     }
-        //     self.board[x][y] = .{ .solved = val };
-        //     self.scratch_remove_key(self.get_row(y), val);
-        //     self.scratch_remove_key(self.get_col(x), val);
-        //     self.scratch_remove_key(self.get_sub(x, y), val);
-        // }
+        pub fn solve(self: *Self) !bool {
+            var solved = true;
+            var response = true;
+            while (response) {
+                response = false;
+                for (0..9) |y| {
+                    for (0..9) |x| {
+                        if (self.board[x][y]) |*tag| {
+                            switch (tag.*) {
+                                .scratch => |*s| {
+                                    if (s.count() == 1) {
+                                        var iter = s.keyIterator();
+                                        const k = iter.next().?.*;
+                                        self.set(@as(u4, @intCast(x)), @as(u4, @intCast(y)), k, Tag.solved);
+                                        //Note:  the set will be removed/deinited in the above set call
+                                        response = true;
+                                    }
+                                    solved = false;
+                                },
+                                else => {},
+                            }
+                        }
+                    }
+                }
+            }
+            return solved;
+        }
 
         pub fn print(self: Self) !void {
             const out = std.io.getStdOut();
@@ -222,14 +227,14 @@ pub fn Engine() type {
             const red = "\x1b[31m";
             const reset = "\x1b[0m";
 
-            std.debug.print("-------------------------------------\n", .{});
+            // std.debug.print("-------------------------------------\n", .{});
             for (0..9) |y| {
                 for (0..9) |x| {
                     if (self.board[x][y]) |val| {
                         switch (val) {
                             .scratch => |*n| {
                                 var entry = n.*;
-                                std.debug.print("({d},{d}) ", .{ x, y });
+                                std.debug.print("({d},{d} count={d} ) ", .{ x, y, entry.count() });
                                 for (1..10) |i| {
                                     const i_u4: u4 = @intCast(i);
                                     if (entry.contains(i_u4) == true) {
@@ -246,7 +251,7 @@ pub fn Engine() type {
                     }
                 }
                 if (y == 8) {
-                    std.debug.print("-------------------------------------\n", .{});
+                    // std.debug.print("-------------------------------------\n", .{});
                 }
             }
         }

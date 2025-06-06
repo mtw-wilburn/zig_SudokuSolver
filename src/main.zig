@@ -10,29 +10,29 @@ pub fn main() !void {
     defer _ = gpa.deinit();
 
     var p = puzzle.Engine().init(allocator);
+
+    const pzl = [_]u4{ 5, 3, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 1, 9, 5, 0, 0, 0, 0, 9, 8, 0, 0, 0, 0, 6, 0, 8, 0, 0, 0, 6, 0, 0, 0, 3, 4, 0, 0, 8, 0, 3, 0, 0, 1, 7, 0, 0, 0, 2, 0, 0, 0, 6, 0, 6, 0, 0, 0, 0, 2, 8, 0, 0, 0, 0, 4, 1, 9, 0, 0, 5, 0, 0, 0, 0, 8, 0, 0, 7, 9 };
+    try p.load(pzl[0..]);
+
+    if (try p.solve() == false) {
+        p.print_scratch();
+    }
     try p.print();
-
-    try p.fill_scratch();
-
-    // p.set_solved(2, 2, 2);
-    // p.set_key(3, 3, 3);
-    p.set(2, 2, 2, puzzle.Tag.solved);
-    p.set(3, 3, 3, puzzle.Tag.key);
-    try p.print();
-
-    const row = p.get_row(3);
-    p.print_rcs(row);
-
-    const col = p.get_col(3);
-    p.print_rcs(col);
-
-    const sub = p.get_sub(4,4);
-    p.print_rcs(sub);
-
-    p.print_scratch();
 }
 
 test "simple test" {
+    // let vals1 = vec![
+    //     vec!['5', '3', '.', '.', '7', '.', '.', '.', '.'],
+    //     vec!['6', '.', '.', '1', '9', '5', '.', '.', '.'],
+    //     vec!['.', '9', '8', '.', '.', '.', '.', '6', '.'],
+    //     vec!['8', '.', '.', '.', '6', '.', '.', '.', '3'],
+    //     vec!['4', '.', '.', '8', '.', '3', '.', '.', '1'],
+    //     vec!['7', '.', '.', '.', '2', '.', '.', '.', '6'],
+    //     vec!['.', '6', '.', '.', '.', '.', '2', '8', '.'],
+    //     vec!['.', '.', '.', '4', '1', '9', '.', '.', '5'],
+    //     vec!['.', '.', '.', '.', '8', '.', '.', '7', '9'],
+    // ];
+
     var list = std.ArrayList(i32).init(std.testing.allocator);
     defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
     try list.append(42);
