@@ -1,15 +1,14 @@
 const std = @import("std");
 
-pub const Tag = enum {
-    key,
-    solved,
-    scratch,
-};
-
 pub fn Engine() type {
     return struct {
         const Self = @This();
 
+        const Tag = enum {
+            key,
+            solved,
+            scratch,
+        };
         const TaggedVal = union(Tag) {
             key: u4,
             solved: u4,
@@ -22,90 +21,8 @@ pub fn Engine() type {
         pub fn init(allocator: std.mem.Allocator) Self {
             return .{
                 .allocator = allocator,
-                .board = [9][9]?TaggedVal{
-                    [_]?TaggedVal{ null, null, null, null, null, null, null, null, null },
-                    [_]?TaggedVal{ null, null, null, null, null, null, null, null, null },
-                    [_]?TaggedVal{ null, null, null, null, null, null, null, null, null },
-                    [_]?TaggedVal{ null, null, null, null, null, null, null, null, null },
-                    [_]?TaggedVal{ null, null, null, null, null, null, null, null, null },
-                    [_]?TaggedVal{ null, null, null, null, null, null, null, null, null },
-                    [_]?TaggedVal{ null, null, null, null, null, null, null, null, null },
-                    [_]?TaggedVal{ null, null, null, null, null, null, null, null, null },
-                    [_]?TaggedVal{ null, null, null, null, null, null, null, null, null },
-                },
+                .board = .{.{null} ** 9} ** 9,
             };
-        }
-
-        pub fn get_row(self: *Self, y: u4) [9]*?TaggedVal {
-            var row: [9]*?TaggedVal = undefined;
-            for (0..9) |i| {
-                row[i] = &self.board[i][y];
-            }
-            return row;
-        }
-
-        pub fn get_col(self: *Self, x: u4) [9]*?TaggedVal {
-            var col: [9]*?TaggedVal = undefined;
-            for (0..9) |i| {
-                col[i] = &self.board[x][i];
-            }
-            return col;
-        }
-
-        pub fn get_sub(self: *Self, x: u4, y: u4) [9]*?TaggedVal {
-            var _x: [3]u4 = undefined;
-            var _y: [3]u4 = undefined;
-
-            switch (x) {
-                6...9 => _x = .{ 6, 7, 8 },
-                3...5 => _x = .{ 3, 5, 4 },
-                else => _x = .{ 0, 1, 2 },
-            }
-
-            switch (y) {
-                6...9 => _y = .{ 6, 7, 8 },
-                3...5 => _y = .{ 3, 5, 4 },
-                else => _y = .{ 0, 1, 2 },
-            }
-
-            var sub: [9]*?TaggedVal = undefined;
-            var counter: u4 = 0;
-            for (_y) |j| {
-                for (_x) |i| {
-                    sub[counter] = &self.board[i][j];
-                    counter += 1;
-                }
-            }
-            return sub;
-        }
-
-        pub fn fill_scratch(self: *Self) !void {
-            for (0..9) |y| {
-                for (0..9) |x| {
-                    var val = std.AutoHashMap(u4, void).init(self.allocator);
-                    for (1..10) |v| {
-                        // const i_u4: u4 = @intCast(v);
-                        try val.put(@as(u4, @intCast(v)), {});
-                    }
-                    self.board[x][y] = .{ .scratch = val };
-                }
-            }
-        }
-
-        fn scratch_remove_key(self: *Self, arr: [9]*?TaggedVal, val: u4) void {
-            _ = self;
-            for (arr) |idx| {
-                if (idx.*) |*elm| {
-                    switch (elm.*) {
-                        .scratch => |*tag| {
-                            if (tag.contains(val) == true) {
-                                _ = tag.remove(val);
-                            }
-                        },
-                        else => {},
-                    }
-                }
-            }
         }
 
         pub fn load(self: *Self, data: []const u4) !void {
@@ -123,26 +40,6 @@ pub fn Engine() type {
                     },
                 }
             }
-        }
-
-        pub fn set(self: *Self, x: u4, y: u4, val: u4, tag: Tag) void {
-            if (self.board[x][y]) |*cell| {
-                switch (cell.*) {
-                    .scratch => |*t| {
-                        t.*.deinit();
-                    },
-                    else => {},
-                }
-            }
-            switch (tag) {
-                .key => self.board[x][y] = .{ .key = val },
-                .solved => self.board[x][y] = .{ .solved = val },
-                else => {},
-            }
-            // self.board[x][y] = .{ .key = val };
-            self.scratch_remove_key(self.get_row(y), val);
-            self.scratch_remove_key(self.get_col(x), val);
-            self.scratch_remove_key(self.get_sub(x, y), val);
         }
 
         pub fn solve(self: *Self) !bool {
@@ -202,27 +99,27 @@ pub fn Engine() type {
             }
         }
 
-        pub fn print_rcs(self: Self, arr: [9]*?TaggedVal) void {
-            _ = self;
-            const blue = "\x1b[34m";
-            const reset = "\x1b[0m";
-
-            std.debug.print("-------------------------------------\n", .{});
-            for (arr) |x| {
-                if (x.*) |val| {
-                    switch (val) {
-                        .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),
-                        .solved => |n| std.debug.print("| {d} ", .{n}),
-                        else => std.debug.print("| {s} ", .{" "}),
-                    }
-                } else {
-                    std.debug.print("| {s} ", .{" "});
-                }
-            }
-            std.debug.print("|\n", .{});
-            std.debug.print("-------------------------------------\n", .{});
-        }
-
+        // pub fn print_rcs(self: Self, arr: [9]*?TaggedVal) void {
+        //     _ = self;
+        //     const blue = "\x1b[34m";
+        //     const reset = "\x1b[0m";
+        //
+        //     std.debug.print("-------------------------------------\n", .{});
+        //     for (arr) |x| {
+        //         if (x.*) |val| {
+        //             switch (val) {
+        //                 .key => |n| std.debug.print("| {s}{d}{s} ", .{ blue, n, reset }),
+        //                 .solved => |n| std.debug.print("| {d} ", .{n}),
+        //                 else => std.debug.print("| {s} ", .{" "}),
+        //             }
+        //         } else {
+        //             std.debug.print("| {s} ", .{" "});
+        //         }
+        //     }
+        //     std.debug.print("|\n", .{});
+        //     std.debug.print("-------------------------------------\n", .{});
+        // }
+        
         pub fn print_scratch(self: *Self) void {
             const red = "\x1b[31m";
             const reset = "\x1b[0m";
@@ -255,5 +152,98 @@ pub fn Engine() type {
                 }
             }
         }
+
+        fn get_row(self: *Self, y: u4) [9]*?TaggedVal {
+            var row: [9]*?TaggedVal = undefined;
+            for (0..9) |i| {
+                row[i] = &self.board[i][y];
+            }
+            return row;
+        }
+
+        fn get_col(self: *Self, x: u4) [9]*?TaggedVal {
+            var col: [9]*?TaggedVal = undefined;
+            for (0..9) |i| {
+                col[i] = &self.board[x][i];
+            }
+            return col;
+        }
+
+        fn get_sub(self: *Self, x: u4, y: u4) [9]*?TaggedVal {
+            var _x: [3]u4 = undefined;
+            var _y: [3]u4 = undefined;
+
+            switch (x) {
+                6...9 => _x = .{ 6, 7, 8 },
+                3...5 => _x = .{ 3, 5, 4 },
+                else => _x = .{ 0, 1, 2 },
+            }
+
+            switch (y) {
+                6...9 => _y = .{ 6, 7, 8 },
+                3...5 => _y = .{ 3, 5, 4 },
+                else => _y = .{ 0, 1, 2 },
+            }
+
+            var sub: [9]*?TaggedVal = undefined;
+            var counter: u4 = 0;
+            for (_y) |j| {
+                for (_x) |i| {
+                    sub[counter] = &self.board[i][j];
+                    counter += 1;
+                }
+            }
+            return sub;
+        }
+
+        fn fill_scratch(self: *Self) !void {
+            for (0..9) |y| {
+                for (0..9) |x| {
+                    var val = std.AutoHashMap(u4, void).init(self.allocator);
+                    for (1..10) |v| {
+                        // const i_u4: u4 = @intCast(v);
+                        try val.put(@as(u4, @intCast(v)), {});
+                    }
+                    self.board[x][y] = .{ .scratch = val };
+                }
+            }
+        }
+
+        fn scratch_remove_key(self: *Self, arr: [9]*?TaggedVal, val: u4) void {
+            _ = self;
+            for (arr) |idx| {
+                if (idx.*) |*elm| {
+                    switch (elm.*) {
+                        .scratch => |*tag| {
+                            if (tag.contains(val) == true) {
+                                _ = tag.remove(val);
+                            }
+                        },
+                        else => {},
+                    }
+                }
+            }
+        }
+
+        fn set(self: *Self, x: u4, y: u4, val: u4, tag: Tag) void {
+            if (self.board[x][y]) |*cell| {
+                switch (cell.*) {
+                    .scratch => |*t| {
+                        t.*.deinit();
+                    },
+                    else => {},
+                }
+            }
+            switch (tag) {
+                .key => self.board[x][y] = .{ .key = val },
+                .solved => self.board[x][y] = .{ .solved = val },
+                else => {},
+            }
+            // self.board[x][y] = .{ .key = val };
+            self.scratch_remove_key(self.get_row(y), val);
+            self.scratch_remove_key(self.get_col(x), val);
+            self.scratch_remove_key(self.get_sub(x, y), val);
+        }
+
     };
 }
