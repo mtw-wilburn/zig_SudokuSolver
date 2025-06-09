@@ -42,32 +42,18 @@ pub fn Engine() type {
             }
         }
 
-        pub fn solve(self: *Self) !bool {
-            var solved = true;
-            var response = true;
-            while (response) {
-                response = false;
-                for (0..9) |y| {
-                    for (0..9) |x| {
-                        if (self.board[x][y]) |*tag| {
-                            switch (tag.*) {
-                                .scratch => |*s| {
-                                    if (s.count() == 1) {
-                                        var iter = s.keyIterator();
-                                        const k = iter.next().?.*;
-                                        self.set(@as(u4, @intCast(x)), @as(u4, @intCast(y)), k, Tag.solved);
-                                        //Note:  the set will be removed/deinited in the above set call
-                                        response = true;
-                                    }
-                                    solved = false;
-                                },
-                                else => {},
-                            }
-                        }
-                    }
+        pub fn solve(self: *Self) void {
+            while (true) {
+                self.algorithm_a();
+                if (self.is_solved() == true) {
+                    break;
                 }
+
+                if (self.algorithm_b()) {
+                    continue;
+                }
+                break;
             }
-            return solved;
         }
 
         pub fn print(self: Self) !void {
@@ -119,7 +105,7 @@ pub fn Engine() type {
         //     std.debug.print("|\n", .{});
         //     std.debug.print("-------------------------------------\n", .{});
         // }
-        
+
         pub fn print_scratch(self: *Self) void {
             const red = "\x1b[31m";
             const reset = "\x1b[0m";
@@ -201,7 +187,6 @@ pub fn Engine() type {
                 for (0..9) |x| {
                     var val = std.AutoHashMap(u4, void).init(self.allocator);
                     for (1..10) |v| {
-                        // const i_u4: u4 = @intCast(v);
                         try val.put(@as(u4, @intCast(v)), {});
                     }
                     self.board[x][y] = .{ .scratch = val };
@@ -239,11 +224,56 @@ pub fn Engine() type {
                 .solved => self.board[x][y] = .{ .solved = val },
                 else => {},
             }
-            // self.board[x][y] = .{ .key = val };
             self.scratch_remove_key(self.get_row(y), val);
             self.scratch_remove_key(self.get_col(x), val);
             self.scratch_remove_key(self.get_sub(x, y), val);
         }
 
+        fn algorithm_a(self: *Self) void {
+            var keep_going = true;
+
+            while (keep_going) {
+                keep_going = false;
+                for (0..9) |y| {
+                    for (0..9) |x| {
+                        if (self.board[x][y]) |*tag| {
+                            switch (tag.*) {
+                                .scratch => |*s| {
+                                    if (s.count() == 1) {
+                                        var iter = s.keyIterator();
+                                        const k = iter.next().?.*;
+                                        self.set(@as(u4, @intCast(x)), @as(u4, @intCast(y)), k, Tag.solved);
+                                        //Note: the set will be removed/deinited in the above set call
+                                        keep_going = true;
+                                    }
+                                },
+                                else => {},
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        fn algorithm_b(self: *Self) bool {
+            _ = self;
+            return false;
+        }
+
+        fn is_solved(self: Self) bool {
+            for (0..9) |y| {
+                for (0..9) |x| {
+                    if (self.board[x][y]) |val| {
+                        switch (val) {
+                            .scratch => {
+                                return false;
+                            },
+                            else => {},
+                        }
+                    }
+                }
+            }
+            return true;
+        }
     };
 }
