@@ -49,7 +49,15 @@ pub fn Engine() type {
                     break;
                 }
 
-                if (self.algorithm_b()) {
+                if (self.algorithm_b() == true) {
+                    continue;
+                }
+
+                if (self.algorithm_c() == true) {
+                    continue;
+                }
+
+                if (self.algorithm_d() == true) {
                     continue;
                 }
                 break;
@@ -255,8 +263,129 @@ pub fn Engine() type {
             }
         }
 
+        // examine each possible solution for a cell, if the empty cells for that row
+        // cannot have that value because their respective cols already contain that value
+        // we've found the only possible value for the cell
         fn algorithm_b(self: *Self) bool {
-            _ = self;
+            for (0..9) |y| {
+                const row = self.get_row(@as(u4, @intCast(y)));
+                for (row, 0..) |r, x| {
+                    if (r.*) |*elm| {
+                        switch (elm.*) {
+                            .scratch => |*s| {
+                                var iter = s.keyIterator();
+                                while (iter.next()) |k| {
+                                    var found = true;
+                                    for (row, 0..) |r1, i| {
+                                        if (x == i) {
+                                            continue;
+                                        }
+                                        if (r1.*) |*e| {
+                                            switch (e.*) {
+                                                .scratch => |*s1| {
+                                                    if (s1.contains(k.*) == true) {
+                                                        found = false;
+                                                        break;
+                                                    }
+                                                },
+                                                else => {},
+                                            }
+                                        }
+                                    }
+                                    if (found == true) {
+                                        self.set(@as(u4, @intCast(x)), @as(u4, @intCast(y)), k.*, Tag.solved);
+                                        return true;
+                                    }
+                                }
+                            },
+                            else => {},
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // examine each possible solution for a cell, if the empty cells for that col
+        // cannot have that value because their respective rows already contain that value
+        // we've found the only possible value for the cell
+        fn algorithm_c(self: *Self) bool {
+            for (0..9) |x| {
+                const col = self.get_col(@as(u4, @intCast(x)));
+                for (col, 0..) |c, y| {
+                    if (c.*) |*elm| {
+                        switch (elm.*) {
+                            .scratch => |*s| {
+                                var iter = s.keyIterator();
+                                while (iter.next()) |k| {
+                                    var found = true;
+                                    for (col, 0..) |c1, i| {
+                                        if (y == i) {
+                                            continue;
+                                        }
+                                        if (c1.*) |*e| {
+                                            switch (e.*) {
+                                                .scratch => |*s1| {
+                                                    if (s1.contains(k.*) == true) {
+                                                        found = false;
+                                                        break;
+                                                    }
+                                                },
+                                                else => {},
+                                            }
+                                        }
+                                    }
+                                    if (found == true) {
+                                        self.set(@as(u4, @intCast(x)), @as(u4, @intCast(y)), k.*, Tag.solved);
+                                        return true;
+                                    }
+                                }
+                            },
+                            else => {},
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        //Determine if any of the unsolved cells in a sub-box can be solved
+        //by examining all the cells in that sub-box.  By checking if out of
+        //all possibilities is there a cell with one unique possible solution
+        fn algorithm_d(self: *Self) bool {
+            for (0..9) |y| {
+                for (0..9) |x| {
+                    if (self.board[x][y]) |*tag| {
+                        switch (tag.*) {
+                            .scratch => |*s| {
+                                var iter = s.keyIterator();
+                                while (iter.next()) |k| {
+                                    var found = true;
+                                    const sub = self.get_sub(@as(u4, @intCast(x)), @as(u4, @intCast(y)));
+                                    for (sub) |c| {
+                                        if (c.*) |*e| {
+                                            switch (e.*) {
+                                                .scratch => |*s1| {
+                                                    if (s1.contains(k.*) == true) {
+                                                        found = false;
+                                                        break;
+                                                    }
+                                                },
+                                                else => {},
+                                            }
+                                        }
+                                    }
+                                    if (found == true) {
+                                        self.set(@as(u4, @intCast(x)), @as(u4, @intCast(y)), k.*, Tag.solved);
+                                        return true;
+                                    }
+                                }
+                            },
+                            else => {},
+                        }
+                    }
+                }
+            }
             return false;
         }
 
