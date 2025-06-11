@@ -42,7 +42,7 @@ pub fn Engine() type {
             }
         }
 
-        pub fn solve(self: *Self) void {
+        pub fn solve(self: *Self) !void {
             while (true) {
                 self.algorithm_a();
                 if (self.is_solved() == true) {
@@ -58,6 +58,10 @@ pub fn Engine() type {
                 }
 
                 if (self.algorithm_d() == true) {
+                    continue;
+                }
+
+                if (try self.algorithm_e() == true) {
                     continue;
                 }
                 break;
@@ -216,6 +220,26 @@ pub fn Engine() type {
                     }
                 }
             }
+        }
+
+        fn get_solution_count_2(self: *Self) !std.ArrayList(struct { u4, u4, *?TaggedVal }) {
+            var list = std.ArrayList(struct { u4, u4, *?TaggedVal }).init(self.allocator);
+
+            for (0..9) |y| {
+                for (0..9) |x| {
+                    if (self.board[x][y]) |*cell| {
+                        switch (cell.*) {
+                            .scratch => |*s| {
+                                if (s.count() == 2) {
+                                    try list.append(.{ @as(u4, @intCast(x)), @as(u4, @intCast(y)), &self.board[x][y] });
+                                }
+                            },
+                            else => {},
+                        }
+                    }
+                }
+            }
+            return list;
         }
 
         fn set(self: *Self, x: u4, y: u4, val: u4, tag: Tag) void {
@@ -387,6 +411,96 @@ pub fn Engine() type {
                 }
             }
             return false;
+        }
+
+        fn algorithm_e(self: *Self) !bool {
+            var retval = false;
+            const list = try self.get_solution_count_2();
+            defer list.deinit();
+
+            for (list.items, 0..) |*a, i| {
+                for (list.items, 0..) |*b, j| {
+                    if (i == j) {
+                        continue;
+                    }
+                    if (a.*[2].*) |*x| {
+                        switch (x.*) {
+                            .scratch => |*map| {
+                                var iter = map.keyIterator();
+                                var keys: [2]u4 = undefined;
+                                var count: u4 = 0;
+                                var eql = true;
+                                while (iter.next()) |k| {
+                                    if (b.*[2].*.?.scratch.contains(k.*)) {
+                                        keys[count] = k.*;
+                                        count += 1;
+                                    } else {
+                                        eql = false;
+                                    }
+                                }
+
+                                if (eql == true) {
+                                    if (a[1] == b[1]) {
+                                        const row = self.get_row(a[1]);
+                                        for (row) |item| {
+                                            if (item.*) |*t| {
+                                                switch (t.*) {
+                                                    .scratch => |*s| {
+                                                        if (s.count() > 2) {
+                                                            _ = s.remove(keys[0]);
+                                                            _ = s.remove(keys[1]);
+                                                            retval = true;
+                                                        }
+                                                    },
+                                                    else => {},
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if (a[0] == b[0]) {
+                                        const col = self.get_col(a[1]);
+                                        for (col) |item| {
+                                            if (item.*) |*t| {
+                                                switch (t.*) {
+                                                    .scratch => |*s| {
+                                                        if (s.count() > 2) {
+                                                            _ = s.remove(keys[0]);
+                                                            _ = s.remove(keys[1]);
+                                                            retval = true;
+                                                        }
+                                                    },
+                                                    else => {},
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if (a[0] == b[0] and a[1] == b[1]) {
+                                        const box = self.get_sub(a[0], a[1]);
+                                        for (box) |item| {
+                                            if (item.*) |*t| {
+                                                switch (t.*) {
+                                                    .scratch => |*s| {
+                                                        if (s.count() > 2) {
+                                                            _ = s.remove(keys[0]);
+                                                            _ = s.remove(keys[1]);
+                                                            retval = true;
+                                                        }
+                                                    },
+                                                    else => {},
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            else => {},
+                        }
+                    }
+                }
+            }
+            return retval;
         }
 
         fn is_solved(self: Self) bool {
