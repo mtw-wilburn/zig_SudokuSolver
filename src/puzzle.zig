@@ -64,6 +64,14 @@ pub fn Engine() type {
                 if (try self.algorithm_e() == true) {
                     continue;
                 }
+
+                if (try self.algorithm_f() == true) {
+                    continue;
+                }
+
+                if (try self.algorithm_g() == true) {
+                    continue;
+                }
                 break;
             }
         }
@@ -139,6 +147,39 @@ pub fn Engine() type {
                                 }
                                 entry.deinit();
                                 self.board[x][y] = null;
+                                std.debug.print("\n", .{});
+                            },
+                            else => {},
+                        }
+                    }
+                }
+                if (y == 8) {
+                    // std.debug.print("-------------------------------------\n", .{});
+                }
+            }
+        }
+
+        pub fn print_scratch2(self: *Self) void {
+            const red = "\x1b[31m";
+            const reset = "\x1b[0m";
+
+            // std.debug.print("-------------------------------------\n", .{});
+            for (0..9) |y| {
+                for (0..9) |x| {
+                    if (self.board[x][y]) |val| {
+                        switch (val) {
+                            .scratch => |*n| {
+                                var entry = n.*;
+                                std.debug.print("({d},{d} count={d} ) ", .{ x, y, entry.count() });
+                                for (1..10) |i| {
+                                    const i_u4: u4 = @intCast(i);
+                                    if (entry.contains(i_u4) == true) {
+                                        std.debug.print("{s}{d}{s} ", .{ red, i_u4, reset });
+                                        // _ = entry.remove(i_u4);
+                                    }
+                                }
+                                // entry.deinit();
+                                // self.board[x][y] = null;
                                 std.debug.print("\n", .{});
                             },
                             else => {},
@@ -496,6 +537,136 @@ pub fn Engine() type {
                                 }
                             },
                             else => {},
+                        }
+                    }
+                }
+            }
+            return retval;
+        }
+
+        fn algorithm_f(self: *Self) !bool {
+            var retval = false;
+
+            for (0..9) |y| {
+                const row = self.get_col(@as(u4, @intCast(y)));
+                var i: u4 = 0;
+
+                while (i < 9) {
+                    defer i += 3;
+
+                    const sub = row[i .. i + 3];
+                    var remain: *const [6]*?TaggedVal = undefined;
+                    switch (i) {
+                        0 => {
+                            remain = row[3..];
+                        },
+                        3 => {
+                            remain = row[0..3] ++ row[6..];
+                        },
+                        6 => {
+                            remain = row[0..6];
+                        },
+                        else => unreachable,
+                    }
+
+                    var u = std.AutoHashMap(u4, void).init(self.allocator);
+                    defer u.deinit();
+                    var broke = false;
+                    for (0..3) |j| {
+                        if (sub[j].*) |*t| {
+                            switch (t.*) {
+                                .scratch => |*e| {
+                                    var iter = e.keyIterator();
+                                    while (iter.next()) |k| {
+                                        try u.put(k.*, {});
+                                    }
+                                },
+                                else => {
+                                    broke = true;
+                                    break;
+                                },
+                            }
+                        }
+                    }
+
+                    if (!broke and u.count() == 3) {
+                        for (remain) |s| {
+                            switch (s.*.?) {
+                                .scratch => |*e| {
+                                    var iter = u.keyIterator();
+                                    while (iter.next()) |k| {
+                                        if (e.remove(k.*)) {
+                                            retval = true;
+                                        }
+                                    }
+                                },
+                                else => {},
+                            }
+                        }
+                    }
+                }
+            }
+            return retval;
+        }
+
+        fn algorithm_g(self: *Self) !bool {
+            var retval = false;
+
+            for (0..9) |x| {
+                const col = self.get_col(@as(u4, @intCast(x)));
+                var i: u4 = 0;
+
+                while (i < 9) {
+                    defer i += 3;
+
+                    const sub = col[i .. i + 3];
+                    var remain: *const [6]*?TaggedVal = undefined;
+                    switch (i) {
+                        0 => {
+                            remain = col[3..];
+                        },
+                        3 => {
+                            remain = col[0..3] ++ col[6..];
+                        },
+                        6 => {
+                            remain = col[0..6];
+                        },
+                        else => unreachable,
+                    }
+
+                    var u = std.AutoHashMap(u4, void).init(self.allocator);
+                    defer u.deinit();
+                    var broke = false;
+                    for (0..3) |j| {
+                        if (sub[j].*) |*t| {
+                            switch (t.*) {
+                                .scratch => |*e| {
+                                    var iter = e.keyIterator();
+                                    while (iter.next()) |k| {
+                                        try u.put(k.*, {});
+                                    }
+                                },
+                                else => {
+                                    broke = true;
+                                    break;
+                                },
+                            }
+                        }
+                    }
+
+                    if (!broke and u.count() == 3) {
+                        for (remain) |s| {
+                            switch (s.*.?) {
+                                .scratch => |*e| {
+                                    var iter = u.keyIterator();
+                                    while (iter.next()) |k| {
+                                        if (e.remove(k.*)) {
+                                            retval = true;
+                                        }
+                                    }
+                                },
+                                else => {},
+                            }
                         }
                     }
                 }
