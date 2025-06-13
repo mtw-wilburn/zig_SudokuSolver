@@ -72,6 +72,10 @@ pub fn Engine() type {
                 if (try self.algorithm_g() == true) {
                     continue;
                 }
+
+                if (try self.algorithm_h() == true) {
+                    continue;
+                }
                 break;
             }
         }
@@ -666,6 +670,63 @@ pub fn Engine() type {
                                     }
                                 },
                                 else => {},
+                            }
+                        }
+                    }
+                }
+            }
+            return retval;
+        }
+
+        fn algorithm_h(self: *Self) !bool {
+            var retval = false;
+            var y: u4 = 0;
+            while (y < 9) {
+                defer y += 3;
+
+                var x: u4 = 0;
+                while (x < 9) {
+                    defer x += 3;
+
+                    const box = self.get_sub(x, y);
+                    var sub = std.ArrayList(struct { u4, *?TaggedVal }).init(self.allocator);
+                    defer sub.deinit();
+
+                    var u = std.AutoHashMap(u4, void).init(self.allocator);
+                    defer u.deinit();
+                    for (0..9) |idx| {
+                        if (box[idx].*) |*e| {
+                            switch (e.*) {
+                                .scratch => |*t| {
+                                    if (t.count() <= 3) {
+                                        try sub.append(.{ @as(u4, @intCast(idx)), box[idx] });
+                                        var iter = t.keyIterator();
+                                        while (iter.next()) |k| {
+                                            try u.put(k.*, {});
+                                        }
+                                    }
+                                },
+                                else => {},
+                            }
+                        }
+                    }
+
+                    if (sub.items.len == 3 and u.count() == 3) {
+                        for (sub.items) |item| {
+                            for (box, 0..) |e, i| {
+                                if (i == item[0]) continue;
+                                switch (e.*.?) {
+                                    .scratch => |*t| {
+                                        var iter = t.keyIterator();
+                                        while (iter.next()) |k| {
+                                            if (u.contains(k.*)) {
+                                                _ = t.remove(k.*);
+                                                retval = true;
+                                            }
+                                        }
+                                    },
+                                    else => {},
+                                }
                             }
                         }
                     }
