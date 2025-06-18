@@ -48,7 +48,6 @@ pub fn Engine() type {
                 if (self.is_solved() == true) {
                     break;
                 }
-
                 if (self.algorithm_b() == true) {
                     continue;
                 }
@@ -76,6 +75,10 @@ pub fn Engine() type {
                 if (try self.algorithm_h() == true) {
                     continue;
                 }
+
+                // if (try self.algorithm_i() == true) {
+                //     continue;
+                // }
                 break;
             }
         }
@@ -218,13 +221,13 @@ pub fn Engine() type {
 
             switch (x) {
                 6...9 => _x = .{ 6, 7, 8 },
-                3...5 => _x = .{ 3, 5, 4 },
+                3...5 => _x = .{ 3, 4, 5 },
                 else => _x = .{ 0, 1, 2 },
             }
 
             switch (y) {
                 6...9 => _y = .{ 6, 7, 8 },
-                3...5 => _y = .{ 3, 5, 4 },
+                3...5 => _y = .{ 3, 4, 5 },
                 else => _y = .{ 0, 1, 2 },
             }
 
@@ -433,6 +436,7 @@ pub fn Engine() type {
                                     const sub = self.get_sub(@as(u4, @intCast(x)), @as(u4, @intCast(y)));
                                     for (sub) |c| {
                                         if (c.*) |*e| {
+                                            if (tag == e) continue;
                                             switch (e.*) {
                                                 .scratch => |*s1| {
                                                     if (s1.contains(k.*) == true) {
@@ -463,9 +467,9 @@ pub fn Engine() type {
             const list = try self.get_solution_count_2();
             defer list.deinit();
 
-            for (list.items, 0..) |*a, i| {
-                for (list.items, 0..) |*b, j| {
-                    if (i == j) {
+            for (list.items) |*a| {
+                for (list.items) |*b| {
+                    if (a.*[0] == b.*[0] and a.*[1] == b.*[1]) {
                         continue;
                     }
                     if (a.*[2].*) |*x| {
@@ -487,14 +491,18 @@ pub fn Engine() type {
                                 if (eql == true) {
                                     if (a[1] == b[1]) {
                                         const row = self.get_row(a[1]);
-                                        for (row) |item| {
+                                        for (row, 0..) |item, idx| {
+                                            if (idx == a[0]) continue;
                                             if (item.*) |*t| {
                                                 switch (t.*) {
                                                     .scratch => |*s| {
                                                         if (s.count() > 2) {
-                                                            _ = s.remove(keys[0]);
-                                                            _ = s.remove(keys[1]);
-                                                            retval = true;
+                                                            if (s.remove(keys[0])) {
+                                                                retval = true;
+                                                            }
+                                                            if (s.remove(keys[1])) {
+                                                                retval = true;
+                                                            }
                                                         }
                                                     },
                                                     else => {},
@@ -504,33 +512,19 @@ pub fn Engine() type {
                                     }
 
                                     if (a[0] == b[0]) {
-                                        const col = self.get_col(a[1]);
-                                        for (col) |item| {
+                                        const col = self.get_col(a[0]);
+                                        for (col, 0..) |item, idx| {
+                                            if (idx == a[1]) continue;
                                             if (item.*) |*t| {
                                                 switch (t.*) {
                                                     .scratch => |*s| {
                                                         if (s.count() > 2) {
-                                                            _ = s.remove(keys[0]);
-                                                            _ = s.remove(keys[1]);
-                                                            retval = true;
-                                                        }
-                                                    },
-                                                    else => {},
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    if (a[0] == b[0] and a[1] == b[1]) {
-                                        const box = self.get_sub(a[0], a[1]);
-                                        for (box) |item| {
-                                            if (item.*) |*t| {
-                                                switch (t.*) {
-                                                    .scratch => |*s| {
-                                                        if (s.count() > 2) {
-                                                            _ = s.remove(keys[0]);
-                                                            _ = s.remove(keys[1]);
-                                                            retval = true;
+                                                            if (s.remove(keys[0])) {
+                                                                retval = true;
+                                                            }
+                                                            if (s.remove(keys[1])) {
+                                                                retval = true;
+                                                            }
                                                         }
                                                     },
                                                     else => {},
@@ -552,7 +546,7 @@ pub fn Engine() type {
             var retval = false;
 
             for (0..9) |y| {
-                const row = self.get_col(@as(u4, @intCast(y)));
+                const row = self.get_row(@as(u4, @intCast(y)));
                 var i: u4 = 0;
 
                 while (i < 9) {
@@ -605,6 +599,24 @@ pub fn Engine() type {
                                     }
                                 },
                                 else => {},
+                            }
+                        }
+
+                        const box = self.get_sub(i, @as(u4, @intCast(y)));
+                        for (0..9) |n| {
+                            if (n / 3 == i) continue;
+                            if (box[n].*) |*item| {
+                                switch (item.*) {
+                                    .scratch => |*e| {
+                                        var iter = u.keyIterator();
+                                        while (iter.next()) |k| {
+                                            if (e.remove(k.*)) {
+                                                retval = true;
+                                            }
+                                        }
+                                    },
+                                    else => {},
+                                }
                             }
                         }
                     }
@@ -672,6 +684,23 @@ pub fn Engine() type {
                                 else => {},
                             }
                         }
+                        const box = self.get_sub(@as(u4, @intCast(x)), i);
+                        for (0..9) |n| {
+                            if (n % 3 == x % 3) continue;
+                            if (box[n].*) |*item| {
+                                switch (item.*) {
+                                    .scratch => |*e| {
+                                        var iter = u.keyIterator();
+                                        while (iter.next()) |k| {
+                                            if (e.remove(k.*)) {
+                                                retval = true;
+                                            }
+                                        }
+                                    },
+                                    else => {},
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -679,6 +708,105 @@ pub fn Engine() type {
         }
 
         fn algorithm_h(self: *Self) !bool {
+            var retval = false;
+            var y: u4 = 0;
+            while (y < 9) {
+                defer y += 3;
+
+                var x: u4 = 0;
+                while (x < 9) {
+                    defer x += 3;
+
+                    const box = self.get_sub(x, y);
+
+                    var u = std.AutoHashMap(u4, void).init(self.allocator);
+                    defer u.deinit();
+                    for (0..9) |idx| {
+                        if (box[idx].*) |*e| {
+                            switch (e.*) {
+                                .scratch => |*t| {
+                                    var iter = t.keyIterator();
+                                    while (iter.next()) |k| {
+                                        var sub = std.ArrayList(struct { u4, *?TaggedVal }).init(self.allocator);
+                                        defer sub.deinit();
+                                        for (0..9) |i| {
+                                            if (box[i].*) |*a| {
+                                                switch (a.*) {
+                                                    .scratch => |*b| {
+                                                        if (b.contains(k.*)) {
+                                                            try sub.append(.{ @as(u4, @intCast(i)), box[i] });
+                                                        }
+                                                    },
+                                                    else => {},
+                                                }
+                                            }
+                                        }
+                                        // at this point sub contains all the cells which have this key in the sub-box.
+                                        var r = std.AutoHashMap(u4, void).init(self.allocator);
+                                        var c = std.AutoHashMap(u4, void).init(self.allocator);
+                                        defer r.deinit();
+                                        defer c.deinit();
+
+                                        for (sub.items) |v| {
+                                            const subidx: u4 = v[0];
+                                            switch (subidx) {
+                                                0...2 => try r.put(0, {}),
+                                                3...5 => try r.put(1, {}),
+                                                6...8 => try r.put(2, {}),
+                                                else => unreachable,
+                                            }
+                                            try c.put((subidx % 3), {});
+                                        }
+
+                                        if (r.count() == 1 and c.count() > 1) {
+                                            var i = r.keyIterator();
+                                            const ridx = y + i.next().?.*;
+                                            const row = self.get_row(ridx);
+                                            for (0..9) |n| {
+                                                if ((n == x) or (n == x + 1) or (n == x + 2)) continue;
+                                                if (row[n].*) |*item| {
+                                                    switch (item.*) {
+                                                        .scratch => |*s| {
+                                                            if (s.remove(k.*)) {
+                                                                retval = true;
+                                                            }
+                                                        },
+                                                        else => {},
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        if (c.count() == 1 and r.count() > 1) {
+                                            var i = c.keyIterator();
+                                            const cidx = x + i.next().?.*;
+                                            const col = self.get_col(cidx);
+                                            for (0..9) |n| {
+                                                if ((n == y) or (n == y + 1) or (n == y + 2)) continue;
+                                                if (col[n].*) |*item| {
+                                                    switch (item.*) {
+                                                        .scratch => |*s| {
+                                                            if (s.remove(k.*)) {
+                                                                retval = true;
+                                                            }
+                                                        },
+                                                        else => {},
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                else => {},
+                            }
+                        }
+                    }
+                }
+            }
+            return retval;
+        }
+
+        fn algorithm_i(self: *Self) !bool {
             var retval = false;
             var y: u4 = 0;
             while (y < 9) {
